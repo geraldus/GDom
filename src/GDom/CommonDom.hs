@@ -33,7 +33,7 @@ module GDom.CommonDom
 , preventDefaultOf
 , removeNode
 , cloneNode, deepClone
-, js_window
+, js_window, js_windowSafe
 )
 where
 
@@ -385,6 +385,7 @@ foreign import javascript safe "$1.oninput = $2;"
 
 foreign import javascript safe "$r = window;"
     js_window :: JSRef a
+foreign import javascript safe "$r = window;" js_windowSafe :: IO (JSRef a)
 
 foreign import javascript safe "$1.preventDefault();"
     js_eventPreventDefault :: DocumentEvent -> IO ()
