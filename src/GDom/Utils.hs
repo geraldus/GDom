@@ -3,7 +3,6 @@ module GDom.Utils(
 ) where
 
 import           Data.Text               (Text)
-import           GHCJS.Foreign
 import           GHCJS.Types             (JSRef(..))
 
 default (Text)
