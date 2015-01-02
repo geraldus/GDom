@@ -16,6 +16,7 @@ module GDom.CommonDom
 , innerTextOf
 , setInnerText
 , setInnerHtml
+, tagName
 , appendTo, prependTo, replaceChild
 , querySelectorAll
 , classListContains
@@ -41,6 +42,7 @@ import           Data.Text               (Text)
 import           GHCJS.Foreign
 import           GHCJS.Types
 import           GDom.Types
+import           GDom.Utils              (tagNameFromStr)
 
 
 --------------------------------------------------------------------------------
@@ -191,6 +193,15 @@ removeDataAttribute_ e k = js_removeDataAttribute e (toJSString k)
 removeDataAttribute :: ToJSString a =>
                        DocumentElement -> a -> IO DocumentElement
 removeDataAttribute e k = removeDataAttribute_ e k >> return e
+
+-- Текущий вариант описания чистый, так как имя ярлыка не может измениться с
+-- течением времени. Каждый элемент документа обладает свойством ИмяЯрлыка.
+-- Однако, следует помнить, что в сегодняшнем виде есть возможность вместо
+-- реального объекта ЭлементДокумента всем описанным функциям передать
+-- нереальный объект, к примеру, null или любой другой указатель легко можно
+-- замаскировать под DocumentElement
+tagName :: DocumentElement -> HtmlTagName
+tagName =  tagNameFromStr . fromJSString . js_tagName
 --------------------------------------------------------------------------------
 
 
@@ -319,6 +330,10 @@ foreign import javascript safe "$1.removeAttribute('data-' + $2)"
 
 foreign import javascript safe "$r = $1.getAttribute('data-' + $2);"
     js_getDataAttribute :: DocumentElement -> JSString -> IO JSString
+
+
+foreign import javascript safe "$r = $1.tagName;"
+    js_tagName :: DocumentElement -> JSString
 
 
 foreign import javascript safe "$2.appendChild($1)"
