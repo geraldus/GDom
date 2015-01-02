@@ -18,6 +18,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     GDom.CommonDom
                        GDom.WebSockets
+                       GDom.Types
                        GDom.Utils
   -- other-modules:
   -- other-extensions:
