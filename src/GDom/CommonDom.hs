@@ -40,19 +40,7 @@ where
 import           Data.Text               (Text)
 import           GHCJS.Foreign
 import           GHCJS.Types
-
-
-data DocumentElement_ = DocumentElement_
-type DocumentElement = JSRef DocumentElement_
-
-type DocumentElementCollection = JSArray DocumentElement_
-
-type WithElement = DocumentElement -> IO DocumentElement
-type OnElement = DocumentElement -> IO ()
-
-
-data DocumentEvent_ = AnyEvent
-type DocumentEvent = JSRef DocumentEvent_
+import           GDom.Types
 
 
 --------------------------------------------------------------------------------
