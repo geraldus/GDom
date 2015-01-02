@@ -69,8 +69,8 @@ documentBody = js_documentBody
     #-}
 
 safeGetDocumentElement :: ToJSString a => a -> IO (Maybe DocumentElement)
-safeGetDocumentElement id = do
-    r <- js_getDocumentElement (toJSString id)
+safeGetDocumentElement eid = do
+    r <- js_getDocumentElement (toJSString eid)
     return $ if (isNull r)
         then Nothing
         else Just r
@@ -313,12 +313,13 @@ foreign import javascript safe "$1.innerHTML = $2;"
 --      обозревателя (свойство dataset)
 foreign import javascript safe "$1.setAttribute('data-' + $2, $3)"
     js_setDataAttribute :: DocumentElement -> JSString -> JSString -> IO ()
+
 foreign import javascript safe "$1.removeAttribute('data-' + $2)"
     js_removeDataAttribute :: DocumentElement -> JSString -> IO ()
 
-
 foreign import javascript safe "$r = $1.getAttribute('data-' + $2);"
     js_getDataAttribute :: DocumentElement -> JSString -> IO JSString
+
 
 foreign import javascript safe "$2.appendChild($1)"
     js_appendChild :: DocumentElement
