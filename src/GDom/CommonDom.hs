@@ -35,6 +35,7 @@ module GDom.CommonDom
 , removeNode
 , cloneNode, deepClone
 , js_window, js_windowSafe
+, submitForm
 )
 where
 
@@ -238,7 +239,19 @@ attachCapturingHandler :: ToJSString a
 attachCapturingHandler el evtp hnd = do
     callback <- syncCallback1 AlwaysRetain False hnd
     js_addEventListener el (toJSString evtp) callback (toJSBool True)
+--------------------------------------------------------------------------------
 
+
+--------------------------------------------------------------------------------
+submitForm :: DocumentElement -> IO ()
+submitForm e = do
+    if tagName e == FormTagName
+        then js_submit e
+        else error "Submit could be used only with FORM element"
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 setOnInput :: DocumentElement
         -> (DocumentElement -> IO ())
         -> IO ()
@@ -410,4 +423,10 @@ foreign import javascript safe "$1.remove();"
 
 foreign import javascript safe "$r = $1.cloneNode($2);"
     js_cloneNode :: DocumentElement -> JSBool -> IO DocumentElement
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+foreign import javascript safe "$1.submit();"
+    js_submit :: DocumentElement -> IO ()
 --------------------------------------------------------------------------------
