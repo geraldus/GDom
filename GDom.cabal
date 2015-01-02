@@ -22,7 +22,7 @@ library
   -- other-modules:
   -- other-extensions:
 
-  extensions:          ExtendedDefaultRules
+  default-extensions:  ExtendedDefaultRules
 
   build-depends:       base >=4.7 && <4.8
                      , ghcjs-base
