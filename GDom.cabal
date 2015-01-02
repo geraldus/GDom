@@ -7,7 +7,7 @@ synopsis:            Javascript FFI functions: common DOM manipulation and etc.
 -- description:
 license:             MIT
 license-file:        LICENSE
-author:              Артур Файзрахманов
+author:              Артур Файзрахманов
 maintainer:          heraldhoi@gmail.com
 -- copyright:
 category:            Web
