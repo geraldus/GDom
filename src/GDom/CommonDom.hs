@@ -38,7 +38,7 @@ module GDom.CommonDom
 , submitForm
   -- * WindowLocation
 , WindowLocationState(..)
-, readWindowLocation
+, sampleWindowLocation
   -- * HttpProtocol
 , HttpProtocol(..)
 , protocolToText
@@ -445,8 +445,9 @@ foreign import javascript safe "$1.submit();"
 foreign import javascript safe "$r = window.location;"
     js_windowLocation :: IO WindowLocationRef
 
-readWindowLocation :: IO WindowLocationState
-readWindowLocation = do
+
+sampleWindowLocation :: IO WindowLocationState
+sampleWindowLocation = do
     js <- js_windowLocation
     mwinloc <- fromJSRef js
     return . fromJust $ mwinloc
