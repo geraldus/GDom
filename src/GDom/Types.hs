@@ -52,3 +52,4 @@ data HtmlTagName = AnchorTagName
 
 data DocumentEvent_ = AnyEvent
 type DocumentEvent = JSRef DocumentEvent_
+
