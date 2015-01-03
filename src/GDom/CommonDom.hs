@@ -36,14 +36,23 @@ module GDom.CommonDom
 , cloneNode, deepClone
 , js_window, js_windowSafe
 , submitForm
+  -- * WindowLocation
+, WindowLocationState(..)
+, readWindowLocation
+  -- * HttpProtocol
+, HttpProtocol(..)
+, protocolToText
+, safeProtocolFromText
 )
 where
 
-import           Data.Text               (Text)
+import           Data.Maybe                (fromJust)
+import           Data.Text                 (Text)
 import           GHCJS.Foreign
+import           GHCJS.Marshal
 import           GHCJS.Types
 import           GDom.Types
-import           GDom.Utils              (tagNameFromStr)
+import           GDom.Utils                (tagNameFromStr)
 
 
 --------------------------------------------------------------------------------
@@ -429,4 +438,16 @@ foreign import javascript safe "$r = $1.cloneNode($2);"
 --------------------------------------------------------------------------------
 foreign import javascript safe "$1.submit();"
     js_submit :: DocumentElement -> IO ()
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+foreign import javascript safe "$r = window.location;"
+    js_windowLocation :: IO WindowLocationRef
+
+readWindowLocation :: IO WindowLocationState
+readWindowLocation = do
+    js <- js_windowLocation
+    mwinloc <- fromJSRef js
+    return . fromJust $ mwinloc
 --------------------------------------------------------------------------------
