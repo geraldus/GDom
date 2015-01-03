@@ -445,7 +445,6 @@ foreign import javascript safe "$1.submit();"
 foreign import javascript safe "$r = window.location;"
     js_windowLocation :: IO WindowLocationRef
 
-
 sampleWindowLocation :: IO WindowLocationState
 sampleWindowLocation = do
     js <- js_windowLocation
