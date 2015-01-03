@@ -53,3 +53,23 @@ data HtmlTagName = AnchorTagName
 data DocumentEvent_ = AnyEvent
 type DocumentEvent = JSRef DocumentEvent_
 
+
+data HttpProtocol = HttpProtocol
+                  | WsProtocol
+                  | SecuredHttpProtocol
+                  | SecuredWsProtocol
+                  deriving (Show, Eq)
+
+
+protocolToText :: HttpProtocol -> Text
+protocolToText HttpProtocol        = "http:"
+protocolToText SecuredHttpProtocol = "https:"
+protocolToText WsProtocol          = "ws:"
+protocolToText SecuredWsProtocol   = "wss:"
+
+safeProtocolFromText :: Text -> Maybe HttpProtocol
+safeProtocolFromText "http:"  = Just HttpProtocol
+safeProtocolFromText "https:" = Just SecuredHttpProtocol
+safeProtocolFromText "ws:"    = Just WsProtocol
+safeProtocolFromText "wss:"   = Just SecuredWsProtocol
+safeProtocolFromText _        = Nothing
