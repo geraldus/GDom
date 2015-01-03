@@ -60,6 +60,18 @@ data HttpProtocol = HttpProtocol
                   | SecuredWsProtocol
                   deriving (Show, Eq)
 
+type UrlUtilsHref     = Text
+type UrlUtilsProtocol = Text
+type UrlUtilsHost     = Text
+type UrlUtilsHostName = Text
+type UrlUtilsPort     = Text
+type UrlUtilsPathName = Text
+type UrlUtilsSearch   = Text
+type UrlUtilsHash     = Text
+type UrlUtilsUserName = Text
+type UrlUtilsPassword = Text
+type UrlUtilsOrigin   = Text
+
 
 protocolToText :: HttpProtocol -> Text
 protocolToText HttpProtocol        = "http:"
