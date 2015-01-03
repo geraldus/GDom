@@ -51,6 +51,7 @@ tagNameFromStr = fromUpperCase . map toUpper
 data TimeRef_ = TimeRef_
 type TimeRef = JSRef TimeRef_
 
+
 foreign import javascript safe "$r = new Date();"
     js_newDate :: IO (TimeRef)
 
