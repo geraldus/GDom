@@ -1,12 +1,18 @@
 module GDom.Utils(
   getTimeZoneOffset
 , tagNameFromStr
+, propCascadeMaybe, propCascadeMaybe'
 ) where
 
-import           Data.Char               (toUpper)
-import           Data.Text               (Text)
-import           GHCJS.Types             (JSRef(..))
-import           GDom.Types              (HtmlTagName(..))
+import           Control.Monad             (foldM)
+import           Control.Monad.Trans.Maybe (MaybeT(..))
+import           Data.Char                 (toUpper)
+import           Data.Text                 (Text)
+import           GHCJS.Foreign             (ToJSString(..), getPropMaybe)
+import           GHCJS.Marshal             (FromJSRef(..))
+import           GHCJS.Types               (JSRef(..))
+import           GDom.Types                (HtmlTagName(..))
+import           Unsafe.Coerce             (unsafeCoerce)
 
 default (Text)
 
@@ -50,8 +56,33 @@ tagNameFromStr = fromUpperCase . map toUpper
 
 data TimeRef_ = TimeRef_
 type TimeRef = JSRef TimeRef_
+--------------------------------------------------------------------------------
 
 
+--------------------------------------------------------------------------------
+propCascadeMaybe :: ToJSString prop
+               => JSRef a -> [prop] -> IO (Maybe (JSRef b))
+propCascadeMaybe el = runMaybeT . propCascadeMaybeTJSRef el
+
+propCascadeMaybe' :: (FromJSRef res, ToJSString prop)
+               => JSRef a -> [prop] -> IO (Maybe res)
+propCascadeMaybe' el propCascade = runMaybeT $
+        MaybeT . fromJSRef =<< propCascadeMaybeTJSRef el propCascade
+
+-- propCascadeMaybeJSRef :: ToJSString prop =>
+--                        JSRef a -> [prop] -> IO (Maybe (JSRef b))
+-- propCascadeMaybeJSRef el = runMaybeT . propCascadeMaybeTJSRef el
+
+propCascadeMaybeTJSRef :: ToJSString prop =>
+                        JSRef a -> [prop] -> MaybeT IO (JSRef b)
+propCascadeMaybeTJSRef el = unsafeCoerce . foldM foldChain el
+
+foldChain :: ToJSString prop => JSRef a -> prop -> MaybeT IO (JSRef b)
+foldChain obj = MaybeT . (`getPropMaybe` obj)
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 foreign import javascript safe "$r = new Date();"
     js_newDate :: IO (TimeRef)
 
