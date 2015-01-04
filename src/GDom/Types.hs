@@ -2,6 +2,7 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 module GDom.Types where
 
+import           Control.Monad.Trans       (lift)
 import           Control.Monad.Trans.Maybe (MaybeT(..))
 import           Data.Text                 (Text)
 import           GHCJS.Foreign             (getPropMaybe,typeOf)
@@ -72,8 +73,8 @@ data WindowLocationState = WindowLocationState
         , wlsPathName :: UrlUtilsPathName
         , wlsSearch   :: UrlUtilsSearch
         , wlsHash     :: UrlUtilsHash
-        , wlsUserName :: UrlUtilsUserName
-        , wlsPassword :: UrlUtilsPassword
+        , wlsUserName :: Maybe UrlUtilsUserName
+        , wlsPassword :: Maybe UrlUtilsPassword
         , wlsOrigin   :: UrlUtilsOrigin
         }
         deriving (Show, Eq)
@@ -110,8 +111,8 @@ instance FromJSRef WindowLocationState where
                 pathName <- MaybeT . getPropFromJSRef "pathname" $ x
                 search <- MaybeT . getPropFromJSRef "search" $ x
                 hash <- MaybeT . getPropFromJSRef "hash" $ x
-                userName <- MaybeT . getPropFromJSRef "username" $ x
-                password <- MaybeT . getPropFromJSRef "password" $ x
+                userName <- lift . getPropFromJSRef "username" $ x
+                password <- lift . getPropFromJSRef "password" $ x
                 origin <- MaybeT . getPropFromJSRef "origin" $ x
                 return WindowLocationState
                         { wlsHref     = href
