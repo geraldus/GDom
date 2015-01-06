@@ -204,14 +204,12 @@ removeDataAttribute :: ToJSString a =>
                        DocumentElement -> a -> IO DocumentElement
 removeDataAttribute e k = removeDataAttribute_ e k >> return e
 
--- Текущий вариант описания чистый, так как имя ярлыка не может измениться с
--- течением времени. Каждый элемент документа обладает свойством ИмяЯрлыка.
--- Однако, следует помнить, что в сегодняшнем виде есть возможность вместо
+-- Следует помнить, что в сегодняшнем виде есть возможность вместо
 -- реального объекта ЭлементДокумента всем описанным функциям передать
 -- нереальный объект, к примеру, null или любой другой указатель легко можно
 -- замаскировать под DocumentElement
-tagName :: DocumentElement -> HtmlTagName
-tagName =  tagNameFromStr . fromJSString . js_tagName
+tagName :: DocumentElement -> IO HtmlTagName
+tagName e = do js_tagName e >>= return . tagNameFromStr . fromJSString
 --------------------------------------------------------------------------------
 
 
@@ -254,7 +252,8 @@ attachCapturingHandler el evtp hnd = do
 --------------------------------------------------------------------------------
 submitForm :: DocumentElement -> IO ()
 submitForm e = do
-    if tagName e == FormTagName
+    tn <- tagName e
+    if  tn == FormTagName
         then js_submit e
         else error "Submit could be used only with FORM element"
 --------------------------------------------------------------------------------
@@ -355,7 +354,7 @@ foreign import javascript safe "$r = $1.getAttribute('data-' + $2);"
 
 
 foreign import javascript safe "$r = $1.tagName;"
-    js_tagName :: DocumentElement -> JSString
+    js_tagName :: DocumentElement -> IO JSString
 
 
 foreign import javascript safe "$2.appendChild($1)"
