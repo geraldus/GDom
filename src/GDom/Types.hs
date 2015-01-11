@@ -106,24 +106,6 @@ data WindowLocationState = WindowLocationState
         }
         deriving (Show, Eq)
 
-data HttpProtocol = HttpProtocol
-                  | WsProtocol
-                  | SecuredHttpProtocol
-                  | SecuredWsProtocol
-                  deriving (Show, Eq)
-
-type UrlUtilsHref     = Text
-type UrlUtilsProtocol = Text
-type UrlUtilsHost     = Text
-type UrlUtilsHostName = Text
-type UrlUtilsPort     = Text
-type UrlUtilsPathName = Text
-type UrlUtilsSearch   = Text
-type UrlUtilsHash     = Text
-type UrlUtilsUserName = Text
-type UrlUtilsPassword = Text
-type UrlUtilsOrigin   = Text
-
 instance FromJSRef WindowLocationState where
     fromJSRef x = do
         ty <- typeOf x
@@ -161,6 +143,25 @@ instance FromJSRef WindowLocationState where
                 return propVal
             maybeT = MaybeT . return
 
+--------------------------------------------------------------------------------
+data HttpProtocol = HttpProtocol
+                  | WsProtocol
+                  | SecuredHttpProtocol
+                  | SecuredWsProtocol
+                  deriving (Show, Eq)
+
+type UrlUtilsHref     = Text
+type UrlUtilsProtocol = Text
+type UrlUtilsHost     = Text
+type UrlUtilsHostName = Text
+type UrlUtilsPort     = Text
+type UrlUtilsPathName = Text
+type UrlUtilsSearch   = Text
+type UrlUtilsHash     = Text
+type UrlUtilsUserName = Text
+type UrlUtilsPassword = Text
+type UrlUtilsOrigin   = Text
+--------------------------------------------------------------------------------
 protocolToText :: HttpProtocol -> Text
 protocolToText HttpProtocol        = "http:"
 protocolToText SecuredHttpProtocol = "https:"
