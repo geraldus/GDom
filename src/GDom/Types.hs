@@ -13,6 +13,7 @@ import           Text.Shakespeare.I18N     (ToMessage(..))
 default (Text)
 
 
+--------------------------------------------------------------------------------
 data DocumentElement_ = DocumentElement_
 type DocumentElement = JSRef DocumentElement_
 
@@ -20,7 +21,10 @@ type DocumentElementCollection = JSArray DocumentElement_
 
 type WithElement = DocumentElement -> IO DocumentElement
 type OnElement = DocumentElement -> IO ()
+--------------------------------------------------------------------------------
 
+
+--------------------------------------------------------------------------------
 -- Имя ярлыка и сущность ярлыка будут описаны раздельно, так как ярлык в широком
 -- понимании, это не просто имя (к примеру, DivTag), а некая сущность, которая
 -- обладает свойствами и имеет определённое состояние, которое может меняться
@@ -57,6 +61,7 @@ data HtmlTagName = AnchorTagName
                  -- ^ уточнить какие имена получают собственные ярлыки,
                  --   присутствующие в документе
     deriving (Show, Read, Eq, Bounded)
+--------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
@@ -85,10 +90,15 @@ data InputType = ButtonIt
                | WeekIt
                deriving (Show, Eq)
 --------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 data DocumentEvent_ = AnyEvent
 type DocumentEvent = JSRef DocumentEvent_
+--------------------------------------------------------------------------------
 
 
+--------------------------------------------------------------------------------
 type WindowLocationRef = JSRef WindowLocationState
 
 data WindowLocationState = WindowLocationState
@@ -142,6 +152,8 @@ instance FromJSRef WindowLocationState where
                 propVal <- MaybeT . fromJSRef $ propRef
                 return propVal
             maybeT = MaybeT . return
+--------------------------------------------------------------------------------
+
 
 --------------------------------------------------------------------------------
 data HttpProtocol = HttpProtocol
@@ -162,11 +174,15 @@ type UrlUtilsUserName = Text
 type UrlUtilsPassword = Text
 type UrlUtilsOrigin   = Text
 --------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 protocolToText :: HttpProtocol -> Text
 protocolToText HttpProtocol        = "http:"
 protocolToText SecuredHttpProtocol = "https:"
 protocolToText WsProtocol          = "ws:"
 protocolToText SecuredWsProtocol   = "wss:"
+
 
 safeProtocolFromText :: Text -> Maybe HttpProtocol
 safeProtocolFromText "http:"  = Just HttpProtocol
@@ -174,6 +190,9 @@ safeProtocolFromText "https:" = Just SecuredHttpProtocol
 safeProtocolFromText "ws:"    = Just WsProtocol
 safeProtocolFromText "wss:"   = Just SecuredWsProtocol
 safeProtocolFromText _        = Nothing
+--------------------------------------------------------------------------------
+
+
 --------------------------------------------------------------------------------
 instance ToMessage InputType where
     toMessage ButtonIt = "button"
