@@ -8,6 +8,7 @@ import           Data.Text                 (Text)
 import           GHCJS.Foreign             (getPropMaybe,typeOf)
 import           GHCJS.Marshal             (FromJSRef(..))
 import           GHCJS.Types               (JSRef(..), JSArray)
+import           Text.Shakespeare.I18N     (ToMessage(..))
 
 default (Text)
 
@@ -58,6 +59,32 @@ data HtmlTagName = AnchorTagName
     deriving (Show, Read, Eq, Bounded)
 
 
+--------------------------------------------------------------------------------
+data InputType = ButtonIt
+               | CheckBoxIt
+               | ColorIt
+               | DateIt
+               | DateTimeIt
+               | DateTimeLocalIt
+               | EmailIt
+               | FileIt
+               | HiddenIt
+               | ImageIt
+               | MonthIt
+               | NumberIt
+               | PasswordIt
+               | RadioIt
+               | RangeIt
+               | ResetIt
+               | SearchIt
+               | SubmitIt
+               | TelIt
+               | TextIt
+               | TimeIt
+               | UrlIt
+               | WeekIt
+               deriving (Show, Eq)
+--------------------------------------------------------------------------------
 data DocumentEvent_ = AnyEvent
 type DocumentEvent = JSRef DocumentEvent_
 
@@ -146,3 +173,55 @@ safeProtocolFromText "https:" = Just SecuredHttpProtocol
 safeProtocolFromText "ws:"    = Just WsProtocol
 safeProtocolFromText "wss:"   = Just SecuredWsProtocol
 safeProtocolFromText _        = Nothing
+--------------------------------------------------------------------------------
+instance ToMessage InputType where
+    toMessage ButtonIt = "button"
+    toMessage CheckBoxIt = "checkbox"
+    toMessage ColorIt = "color"
+    toMessage DateIt = "date"
+    toMessage DateTimeIt = "datetime"
+    toMessage DateTimeLocalIt = "datetime-local"
+    toMessage EmailIt = "email"
+    toMessage FileIt = "file"
+    toMessage HiddenIt = "hidden"
+    toMessage ImageIt = "image"
+    toMessage MonthIt = "month"
+    toMessage NumberIt = "number"
+    toMessage PasswordIt = "password"
+    toMessage RadioIt = "radio"
+    toMessage RangeIt = "range"
+    toMessage ResetIt = "reset"
+    toMessage SearchIt = "search"
+    toMessage SubmitIt = "submit"
+    toMessage TelIt = "tel"
+    toMessage TextIt = "text"
+    toMessage TimeIt = "time"
+    toMessage UrlIt = "url"
+    toMessage WeekIt = "week"
+
+safeInputTypeFromText :: Text -> Maybe InputType
+safeInputTypeFromText "button" = Just ButtonIt
+safeInputTypeFromText "checkbox" = Just CheckBoxIt
+safeInputTypeFromText "color" = Just ColorIt
+safeInputTypeFromText "date" = Just DateIt
+safeInputTypeFromText "datetime" = Just DateTimeIt
+safeInputTypeFromText "datetime-local" = Just DateTimeLocalIt
+safeInputTypeFromText "email" = Just EmailIt
+safeInputTypeFromText "file" = Just FileIt
+safeInputTypeFromText "hidden" = Just HiddenIt
+safeInputTypeFromText "image" = Just ImageIt
+safeInputTypeFromText "month" = Just MonthIt
+safeInputTypeFromText "number" = Just NumberIt
+safeInputTypeFromText "password" = Just PasswordIt
+safeInputTypeFromText "radio" = Just RadioIt
+safeInputTypeFromText "range" = Just RangeIt
+safeInputTypeFromText "reset" = Just ResetIt
+safeInputTypeFromText "search" = Just SearchIt
+safeInputTypeFromText "submit" = Just SubmitIt
+safeInputTypeFromText "tel" = Just TelIt
+safeInputTypeFromText "text" = Just TextIt
+safeInputTypeFromText "time" = Just TimeIt
+safeInputTypeFromText "url" = Just UrlIt
+safeInputTypeFromText "week" = Just WeekIt
+safeInputTypeFromText _ = Nothing
+--------------------------------------------------------------------------------
