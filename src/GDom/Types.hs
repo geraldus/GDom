@@ -7,7 +7,7 @@ import           Control.Monad.Trans.Maybe (MaybeT(..))
 import           Data.Text                 (Text)
 import           GHCJS.Foreign             (getPropMaybe,typeOf)
 import           GHCJS.Marshal             (FromJSRef(..))
-import           GHCJS.Types               (JSRef(..), JSArray)
+import           GHCJS.Types               (JSRef(..), JSArray, castRef)
 import           Text.Shakespeare.I18N     (ToMessage(..))
 
 default (Text)
@@ -90,6 +90,14 @@ data InputType = ButtonIt
                | UrlIt
                | WeekIt
                deriving (Show, Eq)
+
+instance FromJSRef InputType where
+    fromJSRef i = do
+        let i' = castRef i
+        mval <- fromJSRef i'
+        case mval of
+            Just tval -> return . safeInputTypeFromText $ tval
+            Nothing -> return Nothing
 --------------------------------------------------------------------------------
 
 
