@@ -10,6 +10,7 @@ module GDom.CommonDom
 , reportInstance
 , documentRef
 , documentBody
+, docBody
 , safeGetDocumentElement
 , safeQuerySelector
 , createElement
@@ -73,12 +74,16 @@ reportInstance = js_consoleLogObj
 --------------------------------------------------------------------------------
 documentRef :: DocumentElement
 documentRef = js_document
-
-documentBody :: DocumentElement
-documentBody = js_documentBody
-{-# WARNING documentBody, documentRef
+{-# WARNING documentRef
     "These coulud become IO operations because of mutable nature."
     #-}
+
+documentBody :: DocumentElement
+documentBody = js_documentBody'
+{-# DEPRECATED documentBody "Use IO action docBody instead" #-}
+
+docBody :: IO DocumentElement
+docBody = js_documentBody
 
 safeGetDocumentElement :: ToJSString a => a -> IO (Maybe DocumentElement)
 safeGetDocumentElement eid = do
@@ -289,8 +294,10 @@ foreign import javascript safe "$r = document;"
     js_document :: DocumentElement
 
 foreign import javascript safe "$r = document.body;"
-    js_documentBody :: DocumentElement
+    js_documentBody' :: DocumentElement
 
+foreign import javascript safe "$r = document.body;"
+    js_documentBody :: IO DocumentElement
 
 foreign import javascript safe "$r = document.getElementById($1);"
     js_getDocumentElement :: JSString -> IO DocumentElement
