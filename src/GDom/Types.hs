@@ -93,8 +93,7 @@ data InputType = ButtonIt
 
 instance FromJSRef InputType where
     fromJSRef i = do
-        let i' = castRef i
-        mval <- fromJSRef i'
+        mval <- fromJSRef . castRef $ i
         case mval of
             Just tval -> return . safeInputTypeFromText $ tval
             Nothing -> return Nothing
