@@ -31,6 +31,7 @@ type OnElement = DocumentElement -> IO ()
 -- с течением времени
 -- FIXME Поддерживать все возможные ярлыки
 data HtmlTagName = AnchorTagName
+                 | BodyTagName
                  | DefinitionDescriptionTagName
                  | DefinitionListTagName
                  | DefinitionTermTagName

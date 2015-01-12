@@ -25,6 +25,7 @@ getTimeZoneOffset = do
 tagNameFromStr :: String -> HtmlTagName
 tagNameFromStr = fromUpperCase . map toUpper
     where fromUpperCase "A" = AnchorTagName
+          fromUpperCase "BODY" = BodyTagName
           fromUpperCase "DD" = DefinitionDescriptionTagName
           fromUpperCase "DL" = DefinitionListTagName
           fromUpperCase "DT" = DefinitionTermTagName
