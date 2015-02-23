@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                GDom
-version:             0.0.3.8
+version:             0.0.4.1
 synopsis:            Javascript FFI functions: common DOM manipulation and etc.
 -- description:
 license:             MIT
