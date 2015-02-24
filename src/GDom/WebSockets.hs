@@ -9,15 +9,15 @@ module GDom.WebSockets
 ) where
 
 import           Control.Applicative     ((<$>), (<*>))
+import           Control.Monad           (liftM)
 import           Data.List               (isPrefixOf)
 import           Data.Text               (Text)
 import           Data.Text.Encoding      (decodeUtf8, encodeUtf8)
 import           FRP.Sodium
 import           GHCJS.Foreign
 import           GHCJS.Types             (JSRef(..), JSFun, JSString)
-import           GHCJS.Marshal           (FromJSRef(..), fromJSRef_fromJSString)
+import           GHCJS.Marshal           (FromJSRef(..))
 import           GDom.CommonDom          (reportError)
-import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BSL
 
 default (Text)
@@ -26,7 +26,7 @@ data WebSocketConnection_ = WebSocketConnection_
 type WebSocketConnection = JSRef WebSocketConnection_
 
 data WebSocket = WebSocket
-        { wsMessages   :: Event MessageEvent
+        { wsOnMessage  :: (MessageEvent -> IO ()) -> IO ()
         , wsState      :: Behaviour WebSocketReadyState
         , wsConnection :: WebSocketConnection
         , wsSend       :: BSL.ByteString -> IO ()
@@ -48,29 +48,34 @@ data MessageEvent = MessageEvent
 
 reactiveWebSocket :: ToJSString a => a -> IO WebSocket
 reactiveWebSocket url = do
-    (msgEvt, rstBhv) <- sync $ do
+    (msgRE, rstBhv) <- sync $ do
         a <- newEvent
         b <- newBehaviour WSConnecting
         return (a,b)
-    let (msgE, msgF) = msgEvt
+    let (msgE, msgF) = msgRE
         (rstB, rstF) = rstBhv
 
-    onMessage <- syncCallback1 NeverRetain False (readMsg (sync . msgF))
-    onOpen    <- syncCallback  NeverRetain False (sync $ rstF WSOpen)
-    onClose   <- syncCallback  NeverRetain False (sync $ rstF WSClosed)
+    cbMessage <- syncCallback1 NeverRetain False (readMsg (sync . msgF))
+    cbOpen    <- syncCallback  NeverRetain False (sync $ rstF WSOpen)
+    cbClose   <- syncCallback  NeverRetain False (sync $ rstF WSClosed)
 
-    conn <- js_newWebSocket (toJSString url) onMessage onOpen onClose
-    return $ WebSocket msgE rstB conn (sendData conn)
-    where
-        readMsg :: (MessageEvent -> IO()) -> JSRef MessageEvent -> IO ()
+    conn <- js_newWebSocket (toJSString url) cbMessage cbOpen cbClose
+    return $ WebSocket (onMessage msgE) rstB conn (sendData conn)
+  where readMsg :: (MessageEvent -> IO()) -> JSRef MessageEvent -> IO ()
         readMsg f ref = do
             m <- fromJSRef ref
             case m of
                 Just evt -> f evt
                 _  -> reportError "Unexpected message from web socket recieved."
 
-sendData ::  WebSocketConnection -> BSL.ByteString -> IO ()
-sendData c d = js_webSocketSend c (toJSString d)
+        sendData ::  WebSocketConnection -> BSL.ByteString -> IO ()
+        sendData c d =
+            js_webSocketSend c (toJSString . decodeUtf8 . BSL.toStrict $ d)
+        onMessage :: Event MessageEvent -> (MessageEvent -> IO ()) -> IO ()
+        onMessage e h = do
+           sync . listen e $ h
+           return ()
+--------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
@@ -115,31 +120,6 @@ safeHttpToWsProtocol url = stripHttp url >>=
 
 
 --------------------------------------------------------------------------------
-instance FromJSString BS.ByteString where
-    fromJSString = encodeUtf8 . fromJSString
-
-instance FromJSString BSL.ByteString where
-    fromJSString = BSL.fromStrict . fromJSString
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
-instance ToJSString BS.ByteString where
-    toJSString = toJSString . decodeUtf8
-
-instance ToJSString BSL.ByteString where
-    toJSString = toJSString . BSL.toStrict
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
-instance FromJSRef BSL.ByteString where
-    fromJSRef x = do
-        typ <- typeOf x
-        case typ of
-            4 -> fromJSRef_fromJSString x
-            _ -> return Nothing
-
 instance FromJSRef MessageEvent where
     fromJSRef m = do
         typ <- typeOf m
@@ -148,7 +128,9 @@ instance FromJSRef MessageEvent where
                 md <- getPropMaybe ("data" :: String) m
                 mt <- getPropMaybe ("timeStamp" :: String) m
                 d <- case md of
-                    Just dataJS -> fromJSRef dataJS
+                    Just dataJS -> do
+                        x <- fromJSRef dataJS
+                        return $ liftM (BSL.fromStrict . encodeUtf8) x
                     Nothing -> return Nothing
                 t <- case mt of
                     Just timeStampJS -> fromJSRef timeStampJS
