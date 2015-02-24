@@ -17,7 +17,7 @@ default (Text)
 data DocumentElement_ = DocumentElement_
 type DocumentElement = JSRef DocumentElement_
 
-type DocumentElementCollection = JSArray DocumentElement
+type DocumentElementCollection = JSArray DocumentElement_
 
 type WithElement = DocumentElement -> IO DocumentElement
 type OnElement = DocumentElement -> IO ()
