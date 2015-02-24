@@ -17,6 +17,7 @@ import           Control.Concurrent      (forkIO)
 import           Data.Aeson
 import           Data.List               (isPrefixOf)
 import           Data.Text               (Text)
+import qualified Data.Text as T
 import           Data.Text.Encoding      (decodeUtf8, encodeUtf8)
 import           FRP.Sodium
 import           GHCJS.Foreign
@@ -74,53 +75,51 @@ data MessageEvent = MessageEvent
 reactiveWebSocket :: ToJSString a => a -> IO WebSocket
 reactiveWebSocket url = do
     -- FIXME Чистка, освобождение при закрытии гнезда
-    (msgEvt, readySRB, gateRE, qRB) <- sync $ do
+    (msgEvt, readySRB, qRB) <- sync $ do
         a <- newEvent                  -- Messages :: Event (JSRef m)
         b <- newBehaviour WSConnecting -- State :: Behaviour WebSocketReadyState
-        c <- newEvent                  -- Send pull :: Event BS.ByteString
-        d <- newBehaviour []           -- Send Q    :: Behaviour BS.ByteString
-        return (a,b,c,d)
+        c <- newBehaviour []           -- Send Q    :: Behaviour BS.ByteString
+        return (a,b,c)
     let (msgE, msgF)       = msgEvt
         (readySB, readySF) = readySRB
-        (gateE, gateF)     = gateRE
         (qB, qF)           = qRB
-        datE = snapshot (flip (,)) gateE readySB
-
-        dat2Q (state,dat)
-            | state == WSConnecting || state == WSOpen = do
-                 forkIO . sync $ do
-                     q' <- sample qB
-                     qF (dat:q')
-                 return ()
-            | otherwise = reportWarning "Websocket is closing or already closed"
-
-    let sendQ bs = do
-            forkIO . sync . gateF $ bs
-            return ()
 
     onMessage <- syncCallback1 NeverRetain False (readMsg (sync . msgF))
     onOpen    <- syncCallback  NeverRetain False (sync $ readySF WSOpen)
     onClose   <- syncCallback  NeverRetain False (sync $ readySF WSClosed)
-
     conn <- js_newWebSocket (toJSString url) onMessage onOpen onClose
 
-    let onStateChange WSOpen = do
-            q <- sync $ do
-                 x <- sample qB
-                 qF []
-                 return x
-            mapM_ (\x -> do
-                      forkIO . wsSendData conn $ x
-                      return ()) q
-        onStateChange WSConnecting = return ()
-        onStateChange _ = do
-            reportWarning
-                "Websocket is closing or already closed. Purging queue"
-            sync . qF $ []
+    let sendQ x = do
+            s <- sync . sample $ readySB
+            if s == WSOpen || s == WSConnecting
+               then do sync $ do
+                           q <- sample $ qB
+                           qF (x:q)
+                       print "UPDATED!"
+               else do print "CLOSED!"
+                       sync . qF $ []
 
-    sync $ do
-        listen datE dat2Q
-        listen (value readySB) onStateChange
+        execQ [] = print "SKIP" >> return ()
+        execQ q = do
+            s <- sync . sample $ readySB
+            print $ "EXEC occured at state " ++ show s
+            case s of
+              WSConnecting -> print "WAIT!" >> return ()
+              WSOpen -> do
+                  let q' = reverse q
+                  print $ "OPEN. Q length is " ++ (show (length q'))
+                  -- sync . qF $ []
+                  mapM_ (\x -> do
+                           print ("SENDING:" ++ (T.unpack $ decodeUtf8 x))
+                           wsSendData conn x) q'
+              _ -> do print "CLOSED. PURGING!"
+                      sync . qF $ []
+
+    sync $ listen (value qB) (\x -> do
+        print $ "Q updated! #" ++ show (length x)
+
+        forkIO (execQ x)
+        return ())
 
     return . WebSocket
            $ WebSocketE readySB msgE sendQ conn
@@ -129,18 +128,20 @@ reactiveWebSocket url = do
         readMsg f ref = do
             m <- fromJSRef ref
             case m of
-                Just evt -> f evt
+                Just evt -> forkIO (f evt) >> return ()
                 _  -> reportError "Unexpected message from web socket recieved."
 
         wsSendData ::  WebSocketConnection -> BS.ByteString -> IO ()
         wsSendData c = js_webSocketSend c . toJSString . decodeUtf8
+
+
 
 wsSend :: ToJSON dat => WebSocket -> dat -> IO ()
 wsSend ws = (wsSendQ . unWebSocket $ ws) . BSL.toStrict . encode
 
 wsOnMessage :: WebSocket -> (MessageEvent -> IO ()) -> IO ()
 wsOnMessage w f = do
-    sync . listen (wsMessages . unWebSocket $ w) $  f'
+    sync . listen (wsMessages . unWebSocket $ w) $ f'
     return ()
   where f' x = forkIO (f x) >> return ()
 
