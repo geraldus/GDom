@@ -4,16 +4,15 @@ module GDom.Forms (
 , inputTypeMT
 ) where
 
-import           Control.Monad                (when)
-import           Control.Monad.Trans          (lift,liftIO)
-import           Control.Monad.Trans.Maybe    (MaybeT(..))
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T
+import           Control.Monad             (when)
+import           Control.Monad.Trans       (liftIO)
+import           Control.Monad.Trans.Maybe (MaybeT (..))
+import           Data.Text                 (Text)
+import           GDom.CommonDom            (tagName)
+import           GDom.Types
 import           GHCJS.Foreign
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           GDom.CommonDom               (tagName)
-import           GDom.Types
 
 --------------------------------------------------------------------------------
 inputType :: DocumentElement -> IO Text
@@ -35,7 +34,7 @@ inputTypeMT e = tNameCheck >>= getType
             if tname /= InputTagName
                 then MaybeT . return $ Nothing
                 else return ()
-        getType x = do
+        getType _ = do
             typ <- liftIO . js_inputType $ e
             MaybeT . fromJSRef . castRef $ typ
 --------------------------------------------------------------------------------
