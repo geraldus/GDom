@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                GDom
-version:             0.0.5.0
+version:             0.0.5.1
 synopsis:            Javascript FFI functions: common DOM manipulation and etc.
 -- description:
 license:             MIT
@@ -27,6 +27,7 @@ library
   default-extensions:  ExtendedDefaultRules
 
   build-depends:       base >=4.7 && <4.8
+                     , aeson
                      , ghcjs-base
                      , bytestring
                      , text

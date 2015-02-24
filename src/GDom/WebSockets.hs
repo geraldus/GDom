@@ -5,11 +5,13 @@ module GDom.WebSockets
 , WebSocketReadyState(..)
 , MessageEvent(..)
 , reactiveWebSocket
+, wsSendJSON
 , safeHttpToWsProtocol
 ) where
 
 import           Control.Applicative     ((<$>), (<*>))
 import           Control.Monad           (liftM)
+import           Data.Aeson              (ToJSON(..),encode)
 import           Data.List               (isPrefixOf)
 import           Data.Text               (Text)
 import           Data.Text.Encoding      (decodeUtf8, encodeUtf8)
@@ -75,6 +77,9 @@ reactiveWebSocket url = do
         onMessage e h = do
            sync . listen e $ h
            return ()
+
+wsSendJSON :: ToJSON dat => WebSocket -> dat -> IO ()
+wsSendJSON ws = wsSend ws . encode
 --------------------------------------------------------------------------------
 
 
