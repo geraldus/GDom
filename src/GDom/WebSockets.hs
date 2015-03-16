@@ -12,8 +12,9 @@ module GDom.WebSockets
     , transientWebSocket) where
 
 import           Control.Applicative     ((<$>), (<*>))
+import           Control.Concurrent      (forkIO)
 import           Control.Concurrent.STM
-import           Control.Monad           (liftM)
+import           Control.Monad           (liftM, void)
 import           Data.Aeson
 import           Data.List               (isPrefixOf)
 import           Data.Text               (Text)
@@ -96,7 +97,7 @@ transientWebSocket url = do
     stat <- atomically (newTMVar WSConnecting)
 
     let transMsg = readMsg (atomically . putTMVar msgs)
-        putState = atomically .putTMVar stat
+        putState = void . forkIO . void . atomically . swapTMVar stat
 
         waitMsg = atomically (takeTMVar msgs)
 
