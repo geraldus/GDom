@@ -1,56 +1,68 @@
+{-# LANGUAGE RankNTypes #-}
 module GDom.CommonDom
-( DocumentElement
-, DocumentElementCollection
-, DocumentEvent
-, WithElement
-, OnElement
-, report
-, reportWarning
-, reportError
-, reportInstance
-, documentRef
-, documentBody
-, docBody
-, safeGetDocumentElement
-, safeQuerySelector
-, createElement
-, innerTextOf
-, setInnerText
-, setInnerHtml
-, tagName
-, appendTo, prependTo, replaceChild
-, querySelectorAll
-, classListContains
-, addClassName, addClassName_
-, removeClassName, removeClassName_
-, setAttribute, setAttribute_
-, removeAttribute, removeAttribute_
-, safeGetAttribute
-, setDataAttribute, setDataAttribute_
-, removeDataAttribute, removeDataAttribute_
-, safeGetDataAttribute
-, attachHandler, attachCapturingHandler, dispatchEvent
-, newEvent, newCustomEvent, stopPropagation, stopImmediatePropagation
-, setOnInput
-, preventDefaultOf
-, removeNode
-, cloneNode, deepClone
-, js_window, js_windowSafe
-, submitForm
-  -- * WindowLocation
-, WindowLocationState(..)
-, sampleWindowLocation
-  -- * HttpProtocol
-, HttpProtocol(..)
-, protocolToText
-, safeProtocolFromText
-)
-where
+    ( DocumentElement
+    , DocumentElementCollection
+    , DocumentEvent
+    , WithElement
+    , OnElement
+    , report
+    , reportWarning
+    , reportError
+    , reportInstance
+    , documentRef
+    , documentBody
+    , docBody
+    , safeGetDocumentElement
+    , safeQuerySelector
+    , createElement
+    , innerTextOf
+    , setInnerText
+    , setInnerHtml
+    , tagName
+    , appendTo, prependTo, replaceChild
+    , querySelectorAll
+    , classListContains
+    , addClassName, addClassName_
+    , removeClassName, removeClassName_
+    , setAttribute, setAttribute_
+    , removeAttribute, removeAttribute_
+    , safeGetAttribute
+    , setDataAttribute, setDataAttribute_
+    , removeDataAttribute, removeDataAttribute_
+    , safeGetDataAttribute
+    , attachHandler, attachCapturingHandler, dispatchEvent
+    , newEvent, newCustomEvent, stopPropagation, stopImmediatePropagation
+    , setOnInput
+    , preventDefaultOf
+    , removeNode
+    , cloneNode, deepClone
+    , js_window, js_windowSafe
+    , submitForm
+      -- * WindowLocation
+    , WindowLocationState(..)
+    , sampleWindowLocation
+      -- * HttpProtocol
+    , HttpProtocol(..)
+    , protocolToText
+    , safeProtocolFromText
+    -- * Transient de—inverted logic
+    , TransientElement
+    , transientElementById
+    , captureEvent
+    , transCast)
+  where
 
+import           Control.Monad             (void, when)
+import           Control.Concurrent        (forkIO)
+import           Control.Concurrent.STM
+import qualified Data.HashMap.Lazy         as M
 import           Data.Maybe                (fromJust)
+import           Data.Monoid               ((<>))
 import           Data.Text                 (Text)
+
 import           GHCJS.Foreign
 import           GHCJS.Marshal
+
 import           GHCJS.Types
 import           GDom.Types
 import           GDom.Utils                (tagNameFromStr)
@@ -237,10 +249,11 @@ stopPropagation = js_eventStopPropagation
 stopImmediatePropagation :: DocumentEvent -> IO ()
 stopImmediatePropagation = js_eventStopImmediatePropagation
 
+
 attachHandler :: ToJSString a =>
                  DocumentElement -> a -> (DocumentEvent -> IO ()) -> IO ()
 attachHandler el evtp hnd = do
-    callback <- syncCallback1 AlwaysRetain False hnd
+    callback <- syncCallback1 AlwaysRetain False (void .  forkIO . hnd)
     js_addEventListener el (toJSString evtp) callback (toJSBool False)
 
 attachCapturingHandler :: ToJSString a
@@ -456,4 +469,66 @@ sampleWindowLocation = do
     js <- js_windowLocation
     mwinloc <- fromJSRef js
     return . fromJust $ mwinloc
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+newtype TransientElement = TransientElement
+    { unTransientElement :: ElementPrim }
+
+data ElementPrim = ElementPrim
+    { ref :: JSRef Element
+    , emap :: TMVar (M.HashMap String (TChan ()))
+    , capture :: String -> IO () }
+
+data Element = Element
+
+transCast :: TransientElement -> DocumentElement
+transCast = castRef . ref . unTransientElement
+
+transientElementById :: ToJSString idt => idt -> IO TransientElement
+transientElementById idt = do
+    mRef <- safeGetDocumentElement idt
+    case mRef of
+      Just ref -> do
+         m <- atomically (newTMVar M.empty)
+         let capt eTyp = do
+                 echan <- transListener ref m eTyp
+                 let nam = fromJSString (toJSString eTyp) :: String
+                 print ("Capturing " <> nam)
+                 x <- atomically (dupTChan echan)
+                 atomically (readTChan x)
+                 print ("Captured " <> nam)
+         return (TransientElement (ElementPrim (castRef ref) m capt))
+      Nothing -> let s :: String
+                     s = fromJSString (toJSString idt)
+                 in error $ "Element not found: " ++ s
+
+transListener :: JSRef a
+              -> TMVar (M.HashMap String (TChan ()))
+              -> String
+              -> IO (TChan ())
+transListener r emap typ = do
+    (ech, attach) <- atomically $ do
+         m <- takeTMVar emap
+         (nmap, ech, add) <- case M.lookup typ m of
+            Nothing -> do
+                nc <- newTChan
+                return (M.insert typ nc m, nc, True)
+            Just c -> return (m, c, False)
+         putTMVar emap nmap
+         return (ech, add)
+    when attach $
+        attachHandler (castRef r) typ $ const . void . forkIO $ do
+            print ("Event: " ++ typ)
+            atomically (writeTChan ech ())
+            print ("Updated...")
+    return ech
+
+captureEvent :: ToJSString t
+             => TransientElement -> t -> IO ()
+captureEvent el eTyp = do
+    let ElementPrim _ _ c = unTransientElement el
+    c (fromJSString (toJSString eTyp))
+    return ()
 --------------------------------------------------------------------------------
