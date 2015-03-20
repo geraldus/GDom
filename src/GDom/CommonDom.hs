@@ -478,10 +478,12 @@ newtype TransientElement = TransientElement
 
 data ElementPrim = ElementPrim
     { ref :: JSRef Element
-    , emap :: TMVar (M.HashMap String (TChan ()))
-    , capture :: String -> IO () }
+    , emap :: TMVar (M.HashMap String (TChan JSEvent))
+    , capture :: String -> IO JSEvent }
 
 data Element = Element
+data Event   = Event
+type JSEvent = JSRef Event
 
 transCast :: TransientElement -> DocumentElement
 transCast = castRef . ref . unTransientElement
@@ -495,19 +497,18 @@ transientElementById idt = do
          let capt eTyp = do
                  echan <- transListener ref m eTyp
                  let nam = fromJSString (toJSString eTyp) :: String
-                 print ("Capturing " <> nam)
                  x <- atomically (dupTChan echan)
                  atomically (readTChan x)
-                 print ("Captured " <> nam)
+
          return (TransientElement (ElementPrim (castRef ref) m capt))
       Nothing -> let s :: String
                      s = fromJSString (toJSString idt)
                  in error $ "Element not found: " ++ s
 
 transListener :: JSRef a
-              -> TMVar (M.HashMap String (TChan ()))
+              -> TMVar (M.HashMap String (TChan JSEvent))
               -> String
-              -> IO (TChan ())
+              -> IO (TChan JSEvent)
 transListener r emap typ = do
     (ech, attach) <- atomically $ do
          m <- takeTMVar emap
@@ -519,16 +520,16 @@ transListener r emap typ = do
          putTMVar emap nmap
          return (ech, add)
     when attach $
-        attachHandler (castRef r) typ $ const . void . forkIO $ do
+        attachHandler (castRef r) typ $ \evt -> void . forkIO $ do
             print ("Event: " ++ typ)
-            atomically (writeTChan ech ())
+            atomically (writeTChan ech (castRef evt))
             print ("Updated...")
     return ech
 
 captureEvent :: ToJSString t
-             => TransientElement -> t -> IO ()
+             => TransientElement -> t -> IO JSEvent
 captureEvent el eTyp = do
     let ElementPrim _ _ c = unTransientElement el
-    c (fromJSString (toJSString eTyp))
-    return ()
+    evt <- c (fromJSString (toJSString eTyp))
+    return evt
 --------------------------------------------------------------------------------
